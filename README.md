@@ -1,4 +1,9 @@
 # TARS PostgreSQL — CloudNativePG Implementation (CentOS 9 / Minikube)
+[![EDB variant available](https://img.shields.io/badge/variant-EDB%20CloudNativePG-1a5276)](https://github.com/postgreshelp/edb-cnpg)
+> This is the **community CNPG image** variant. Need EDB-supported images instead (EDB Postgres
+> Advanced Server / EDB's hardened community-PG build)? Same architecture, same scripts, three
+> manifest fields swapped — see [`postgreshelp/edb-cnpg`](https://github.com/postgreshelp/edb-cnpg).
+
 > **8GB laptop POC profile:** The repository is pre-sized for a small dev laptop: Minikube defaults to 4 CPUs / 5Gi RAM / 40Gi disk, PostgreSQL data PVCs are 8Gi, PostgreSQL memory is reduced to a POC-safe profile, PgBouncer is 128Mi/256Mi, and MinIO uses a 5Gi PVC. These are intentionally different from the production TARS sizing; restore production values as a separate hardening task. You can override Minikube sizing with `MINIKUBE_CPUS`, `MINIKUBE_MEMORY`, and `MINIKUBE_DISK`.
 
 
