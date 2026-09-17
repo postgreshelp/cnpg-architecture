@@ -1,0 +1,32 @@
+# CNPG Pooler — native pgBouncer management, matching TARS §5 pool config.
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: tarsdb-pgbouncer
+  namespace: tars-db
+spec:
+  cluster:
+    name: tarsdb-primary
+  instances: 1                # TARS: "runs as a single replica"
+  type: rw                    # pooled writes go to the primary; add a second Pooler with type:ro
+                               # if you want a pooled read-only path to replicas too
+  pgbouncer:
+    poolMode: session          # matches TARS §5.1 Pool mode: Session
+    parameters:
+      max_client_conn: "500"
+      default_pool_size: "25"
+      ignore_startup_parameters: "extra_float_digits"
+  template:
+    spec:
+      containers:
+        - name: pgbouncer
+          resources:
+            requests: {cpu: "50m", memory: "128Mi"}    # POC override, reduced further for a 2-vCPU host
+            limits:   {cpu: "200m", memory: "256Mi"}
+  # TLS: TARS terminates client TLS at the pooler (require) and re-encrypts to the backend
+  # (verify-full). CNPG's Pooler supports this via .spec.pgbouncer.parameters client_tls_sslmode /
+  # server_tls_sslmode plus cert Secrets — plug in your real CA/cert Secret names here before
+  # using this outside a lab:
+  #   parameters:
+  #     client_tls_sslmode: require
+  #     server_tls_sslmode: verify-full

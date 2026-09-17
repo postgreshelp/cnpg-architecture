@@ -1,0 +1,48 @@
+# Runs conn_monitor.py every 10 minutes, matching TARS §8's Go script schedule.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: conn-monitor
+  namespace: tars-common
+spec:
+  schedule: "*/10 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels: {app: conn-monitor}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: conn-monitor
+              image: python:3.12-slim
+              command: ["/bin/sh", "-c"]
+              args:
+                - "pip install --quiet psycopg2-binary && python /scripts/conn_monitor.py"
+              envFrom:
+                - secretRef: {name: tars-monitor-db}
+              # MAX_CONNECTIONS and WATCH_DATABASES below must be kept in sync by hand with
+              # cluster-primary.yaml whenever either changes there — CNPG does not expose these
+              # as a shared value, so nothing enforces the match automatically:
+              #   MAX_CONNECTIONS  <-> spec.postgresql.parameters.max_connections
+              #   WATCH_DATABASES  <-> spec.bootstrap.initdb.database
+              # A stale MAX_CONNECTIONS silently disables the alert (threshold becomes
+              # unreachable); a stale WATCH_DATABASES silently drops per-database logging to zero
+              # rows. Both failed exactly this way during the 2026-09-16 POC bring-up, when these
+              # were still TARS's original 250 / "userz,logq,dbq" instead of this POC's 50 / "tars".
+              env:
+                - name: MAX_CONNECTIONS
+                  value: "50"   # matches postgresql.parameters.max_connections in cluster-primary.yaml
+                - name: ALERT_THRESHOLD_PCT
+                  value: "0.68"
+                - name: IDLE_MINUTES
+                  value: "5"
+                - name: WATCH_DATABASES
+                  value: "tars"   # matches bootstrap.initdb.database in cluster-primary.yaml
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+          volumes:
+            - name: script
+              configMap:
+                name: conn-monitor-script

@@ -1,0 +1,12 @@
+credentials.txt
+manifests/secrets/minio-creds-secret.yaml
+manifests/secrets/postgres-superuser-secret.yaml
+manifests/secrets/postgres-app-secret.yaml
+manifests/monitoring/conn-monitor-secret.yaml
+
+# Local Claude Code session/tooling state — machine- and session-specific, not project source
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Generated per-run install log (recreated fresh by one-click-deploy.sh every run)
+one-click-deploy.log

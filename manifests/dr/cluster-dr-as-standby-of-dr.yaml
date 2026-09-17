@@ -1,0 +1,28 @@
+# TEMPLATE used only during SOP-4 (failback). After tarsdb-dr has been promoted to primary,
+# use a copy of this file to re-provision the ORIGINAL primary site as a fresh replica cluster
+# pointed at whichever Cluster is currently authoritative. Edit destinationPath/endpointURL to
+# match the now-primary site's object store before applying.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: tarsdb-primary
+  namespace: tars-db
+spec:
+  instances: 2
+  imageName: ghcr.io/cloudnative-pg/postgresql:15.6
+  storage:
+    size: 8Gi                   # POC override for an 8GB-RAM laptop; production target is 500Gi
+    storageClass: standard
+  bootstrap:
+    recovery:
+      source: current-primary-object-store
+  externalClusters:
+    - name: current-primary-object-store
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: tarsdb-primary-store
+          serverName: tarsdb-dr          # current authoritative cluster in this POC after DR promotion
+  replica:
+    enabled: true
+    source: current-primary-object-store

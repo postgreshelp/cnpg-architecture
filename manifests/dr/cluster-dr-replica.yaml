@@ -1,0 +1,58 @@
+# DR replica cluster — a separate Cluster object that bootstraps from and continuously replays
+# WAL from the SAME object store the primary writes to. This does NOT stream directly from the
+# primary, matching TARS's Site 2 diagram ("Standby leader replays WAL from repo2").
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: tarsdb-dr
+  namespace: tars-db-dr
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:15.6
+  # See cluster-primary.yaml for the EDB-registry imagePullSecrets note — same applies here;
+  # keep both clusters on the same image source/version.
+
+  storage:
+    size: 8Gi                   # POC override for an 8GB-RAM laptop; production target is 500Gi
+    storageClass: standard
+
+  postgresql:
+    parameters:
+      max_connections: "50"
+      shared_buffers: "512MB"
+      effective_cache_size: "1GB"
+      work_mem: "4MB"
+      maintenance_work_mem: "128MB"
+      max_wal_size: "512MB"
+      min_wal_size: "80MB"
+      max_worker_processes: "4"
+      wal_level: "logical"
+
+  bootstrap:
+    recovery:
+      source: primary-object-store
+
+  externalClusters:
+    - name: primary-object-store
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: tarsdb-primary-store
+          serverName: tarsdb-primary
+
+  replica:
+    enabled: true                       # keeps this cluster in continuous-recovery/read-only mode
+    source: primary-object-store        # flip .enabled to false during DR promotion (see SOP-3)
+
+  # POC-only resource profile for the single DR instance.
+  # CPU reduced from 500m/1 to fit a 2-vCPU host alongside the primary cluster + MinIO + pooler.
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "768Mi"
+
+  monitoring:
+    enablePodMonitor: true

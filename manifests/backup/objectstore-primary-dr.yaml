@@ -1,0 +1,18 @@
+# Read-only view of the same MinIO backup repository for the DR cluster.
+# ObjectStore resources are namespace-scoped, so the DR namespace needs its own object.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: tarsdb-primary-store
+  namespace: tars-db-dr
+spec:
+  configuration:
+    destinationPath: "s3://postgresbackup/"
+    endpointURL: "http://minio.minio:9000"
+    s3Credentials:
+      accessKeyId:
+        name: minio-creds
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: minio-creds
+        key: ACCESS_SECRET_KEY
