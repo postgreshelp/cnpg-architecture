@@ -341,6 +341,10 @@ cd ../firewall
 ---
 ## Verify the deployment (sample output from a real run)
 
+See [docs/07-sample-checkpoint-verify-run.md](docs/07-sample-checkpoint-verify-run.md) for an
+annotated walkthrough of a full `--checkpoint` deploy plus these verify commands, with a one-liner
+explaining what each block of output proves.
+
 ```bash
 kubectl cnpg status tarsdb-primary -n tars-db
 ```
